@@ -1,0 +1,182 @@
+---
+title: "Advances in Ex-Post Harmonisation using Graph Representations of Cross-Taxonomy Transformations"
+subtitle: ""
+date: today
+date-format: medium
+author: 
+ - name: "Cynthia Huang"
+   email: "supervised by Prof. Rob J Hyndman and Dr. Sarah Goodwin"
+institute: "Department of Econometrics and Business Statistics"
+title-slide-attributes: 
+  data-background-image: "_extensions/numbats/monash/images/bg-10.png"
+  data-background-size: "contain"
+footer: "Monash EBS PhD Contest at IDWSDS 2023"
+format: 
+  monash-revealjs:
+    multiplex: true
+    slide-number: true
+    show-slide-number: all
+    show-notes: false
+    controls: true
+    default-timing: 90
+    output-file: slides-monash-revealjs.html
+    theme: [default, custom.scss]
+  revealjs:
+    output-file: slides-revealjs.html
+    show-notes: false
+  pdf:
+    pdf-engine: weasyprint
+execute:
+  echo: true
+bibliography: [references.bib]
+filters: 
+    - include-code-files
+---
+
+## Ex-Post Harmonisation
+
+> Ex-post (or retrospective) data harmonization refers to procedures applied to already collected data to improve the comparability and inferential equivalence of measures from different studies [@kolczynska2022; @fortierMaelstromResearchguidelines2016; @ehlingHarmonisingDataOfficial2003]
+
+Typical cases in Official Statistics involve different taxonomies across space and/or time:
+
+-   **Labour Statistics:** adding and deleting occupation codes
+-   **Macroeconomic and Trade Data:** evolving product/industry classifications; changing country boundaries
+-   **Census and Election Data:** changing statistical survey or electoral boundaries
+
+## Sub-Tasks in Ex-Post Harmonisation
+
+Ex-post harmonisation involves a number of related data wrangling tasks including selecting approriate transformations, and then implementing and validating them on data.
+
+![](images/image-137145983.png){fig-align="center"}
+
+## Cross-Taxonomy Transformations
+
+We use the term **cross-taxonomy transformation** to refer to the sub-task of taking observations collected using a *source* taxonomy, and transforming it into "counter-factual" observations indexed by a *target* taxonomy.
+
+-   **Source/Target Taxonomy:** a set of categories (e.g. occupation codes, product codes, etc.) according to which data is collected or transformed into.
+-   **Category Indexed Values**: a set of (numeric) values indexed by a taxonomy
+-   **Observation:** A set of category indexed values for a given unit of observation (e.g. country, year)
+
+## Motivation & Background for New Approach
+
+-   Standardised workflows can:
+    -   improve code readability and reuse, and
+    -   reduce errors
+    -   see Domain Specfic Languages for data preparation [@wickhamTidyData2014; @kandelWranglerInteractivevisual2011]
+-   Statistical properties of complex data pre-processing are not as well understood or studied compared to simpler transformations (e.g. missing data imputation, outlier detection, etc.)
+    -   formal structures and frameworks can enable more rigorous anlaysis of these properties
+    -   e.g. @blockerPotentialPerilsPreprocessing2013 propose a theoretical framework for multi-phase inference
+
+## Existing Approaches
+
+::: columns
+::: {.column width="30%"}
+-   implementations are highly varied and idiosyncratic
+-   auditing & reuse depends on readability of source code
+-   data quality validation is ad-hoc and unlikely to be comprehensive
+:::
+
+::: {.column width="70%"}
+![](images/paste-13.png){fig-align="center"}
+:::
+:::
+
+## Crossmap Approach
+
+::: columns
+::: {.column width="30%"}
+-   separates the specification of transformations from their implementation
+-   provides a standardised framework for validation using graph conditions
+:::
+
+::: {.column width="70%"}
+![](images/paste-14.png){fig-align="center"}
+:::
+:::
+
+## Crossmaps as Conditional Probability Distributions
+
+::: notes
+
+**Bi-Partite Graph**: has two disjoint sets of nodes, and edges only connect nodes from different sets.
+
+**Conditional Probability Distribution**: describes the probability of an event given the occurrence of another event
+
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| file: includes/simple-xmap-plots.R
+```
+
+::: {layout-nrow="[30,70]"}
+**Bi-Partite Graph**: the source and target taxonomies form two disjoint sets of nodes, and weighted edges specify how numeric data is passed between the two taxonomies.
+```{r}
+#| echo: false
+#| fig-align: center
+abc_bigraph
+
+```
+
+:::
+
+## Other useful representations
+
+::: {layout-ncol="2"}
+
+**Transition Matrix**: representation highlights the fact that cross-taxonomy transformations are a special case of Markov Chains.
+```{r}
+#| echo: false
+#| fig-align: center
+abc_matrix
+```
+
+**Edge List**: representation allows for the transformation to implemented as a series of database joins.
+```{r}
+#| echo: false
+#| fig-align: center
+abc_xmap
+```
+
+:::
+
+<!-- ![](images/paste-22.png){fig-align="center"} -->
+
+## Implications for Validing Transformation Logic
+
+-   A valid cross-taxonomy transformation should **preserve the total** of category index values in each source observation.
+-   A crossmap has valid transformation logic if every source node and its outgoing links define a valid probability distribution -- i.e. **the sum of the edge weights is 1.**
+-   Missing values cannot be meaningfully distributed across multiple categories, so missing values should be dealt with before the cross-taxonomy transformation.
+
+## Implications for Code Readability
+
+Just THREE lines of R code to transform data using a validated crossmap:
+
+``` r
+hssicnaics <- read_csv("naics_xmap.csv")
+src_data <- read_csv("prod_data.csv")
+final_data <- apply_xmap(.data = prod_data, .xmap = hssicnaics)
+```
+
+Compared to hundreds for imperative algorithms (e.g. STATA code below):
+
+``` {.stata include="includes/schott_algorithm_28.do" filename="hssicnaics_20191205/schott_algorithm_28.do [800+ lines]"}
+```
+
+## Implications for Statistical Properties
+
+- Theoretically valid cross-taxonomy transformation logic does not guaranteee the transformed data can support downstream inference or estimation.
+- In practice, the quality of the transformed data depends on the quality of the source data, the quality of the crossmap, and **the degree of imputation performed on the source data**.
+- Cross-taxonomy transformations are a complex imputation procedure. Unlike with missing value imputation, it is not immediately clear how to define metrics for measuring the degree of this imputation. However, the framework suggests that such a **metric needs to incorporate properities of crossmaps as well as the distance between the source and transformed data**.
+- Crossmaps define a class of graphs from which we can **generate alternative transformations** for a given set of source observations. These alternative transformations can then be applied to **examine the robustness** of downstream analysis to different pre-processing (i.e. mapping) decisions.
+
+## Other related work
+
+- `{xmap}` R package implementation of object classes and functions for the crossmap approach
+- Data provenance documentation:
+  - Multi-layer graph visualisation of sequential transformations
+  - Identification and summary of influential sub-graphs (i.e. one-to-many links are more subjective than one-to-one)
+  - Extracting transformation logic from existing algorithms (i.e. using unit vectors to trace the distribution of values)
+
+## References
