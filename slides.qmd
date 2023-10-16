@@ -4,13 +4,13 @@ subtitle: ""
 date: today
 date-format: medium
 author: 
- - name: "Cynthia Huang"
-   email: "supervised by Prof. Rob J Hyndman and Dr. Sarah Goodwin"
+ - name: "Cynthia Huang with A. Prof. Laura Puzzello"
+   email: "supervised by Prof. Rob J Hyndman and Dr. Sarah Goodwin\n"
 institute: "Department of Econometrics and Business Statistics"
 title-slide-attributes: 
   data-background-image: "_extensions/numbats/monash/images/bg-10.png"
   data-background-size: "contain"
-footer: "Monash EBS PhD Contest at IDWSDS 2023"
+footer: "NUMBATS Seminar"
 format: 
   monash-revealjs:
     multiplex: true
@@ -33,6 +33,18 @@ filters:
     - include-code-files
 ---
 
+## Overview
+
+- Introduction to Data Preparation Task
+  - Ex-Post Harmonisation
+  - Cross-Taxonomy Transformation
+  - ANZSCO22 Example
+- Background and Existing Approaches
+- Crossmap Approach
+- Discussion of Implications
+
+# Introduction to Data Preparation Task
+
 ## Ex-Post Harmonisation
 
 > Ex-post (or retrospective) data harmonization refers to procedures applied to already collected data to improve the comparability and inferential equivalence of measures from different studies [@kolczynska2022; @fortierMaelstromResearchguidelines2016; @ehlingHarmonisingDataOfficial2003]
@@ -49,23 +61,69 @@ Ex-post harmonisation involves a number of related data wrangling tasks includin
 
 ![](images/image-137145983.png){fig-align="center"}
 
+## ANZSCO22 Example
+
+```{r}
+#| label: set-up-anzsco
+#| echo: false
+#| message: false
+#| file: includes/anzsco-example.R
+```
+
+-   Data collected using the Australian and New Zealand Standard Classification of Occupations (ANZSCO) is not directly comparable with data collected using the International Standard Classification of Occupations (ISCO).
+
+::: {layout-ncol="2"}
+```{r}
+table_anzsco
+```
+
+```{r}
+table_isco8
+```
+:::
+
+## ANZSCO22 Example
+
+-   The Australian Bureau of Statistics (ABS) has developed a crosswalk between ANZSCO and ISCO8.
+
+::: smaller
+```{r}
+#| echo: false
+#knitr::kable(anzsco_cw)
+anzsco_cw
+```
+:::
+
+## ANZSCO22 Example
+
+-   Combining AUS data with USA data requires transforming each country's observations into a common taxonomy (e.g. ANZSCO22 -\> ISCO8).
+
+```{r}
+#| output-location: column
+## stylised occupation counts 
+## from total of 2000 observed individuals
+anzsco22_stats
+```
+
+::: fragment
+```{r}
+#| output-location: column
+# use a valid crossmap to transform data
+# total count is still 2000!
+apply_xmap(.data = anzsco22_stats,
+           .xmap = anzsco_xmap)
+```
+:::
+
 ## Cross-Taxonomy Transformations
 
 We use the term **cross-taxonomy transformation** to refer to the sub-task of taking observations collected using a *source* taxonomy, and transforming it into "counter-factual" observations indexed by a *target* taxonomy.
 
--   **Source/Target Taxonomy:** a set of categories (e.g. occupation codes, product codes, etc.) according to which data is collected or transformed into.
--   **Category Indexed Values**: a set of (numeric) values indexed by a taxonomy
--   **Observation:** A set of category indexed values for a given unit of observation (e.g. country, year)
+-   **Source/Target Taxonomy:** a set of categories (e.g. occupation codes, product codes, etc.) according to which data is collected or transformed into. (e.g. `anzsco22` and `isco8`)
+-   **Category Indexed Values**: a set of (numeric) values indexed by a taxonomy (e.g. rows in `anzsco22_stats`)
+-   **Observation:** A set of category indexed values for a given unit of observation (e.g. the table `anzsco22_stats`)
 
-## Motivation & Background for New Approach
-
--   Standardised workflows can:
-    -   improve code readability and reuse, and
-    -   reduce errors
-    -   see Domain Specfic Languages for data preparation [@wickhamTidyData2014; @kandelWranglerInteractivevisual2011]
--   Statistical properties of complex data pre-processing are not as well understood or studied compared to simpler transformations (e.g. missing data imputation, outlier detection, etc.)
-    -   formal structures and frameworks can enable more rigorous anlaysis of these properties
-    -   e.g. @blockerPotentialPerilsPreprocessing2013 propose a theoretical framework for multi-phase inference
+# Background and Existing Approaches
 
 ## Existing Approaches
 
@@ -81,12 +139,25 @@ We use the term **cross-taxonomy transformation** to refer to the sub-task of ta
 :::
 :::
 
-## Crossmap Approach
+## Motivation for New Approach
+
+-   Standardised workflows can:
+    -   improve code readability and reuse, and
+    -   reduce errors
+    -   see Domain Specfic Languages for data preparation [@wickhamTidyData2014; @kandelWranglerInteractivevisual2011]
+-   Statistical properties of complex data pre-processing are not as well understood or studied compared to simpler transformations (e.g. missing data imputation, outlier detection, etc.)
+    -   formal structures and frameworks can enable more rigorous anlaysis of these properties
+    -   e.g. @blockerPotentialPerilsPreprocessing2013 propose a theoretical framework for multi-phase inference
+
+# Crossmap Approach
+
+## Crossmaps as Information Structures
 
 ::: columns
 ::: {.column width="30%"}
--   separates the specification of transformations from their implementation
--   provides a standardised framework for validation using graph conditions
+-   a **crossmap** is an information and data structure for encoding and applying cross-taxonomy transformations
+-   separates transformation logic from implementation
+-   allows for data validation using graph conditions
 :::
 
 ::: {.column width="70%"}
@@ -94,17 +165,16 @@ We use the term **cross-taxonomy transformation** to refer to the sub-task of ta
 :::
 :::
 
-## Crossmaps as Conditional Probability Distributions
+## Crossmaps as Graphs
 
 ::: notes
-
 **Bi-Partite Graph**: has two disjoint sets of nodes, and edges only connect nodes from different sets.
 
 **Conditional Probability Distribution**: describes the probability of an event given the occurrence of another event
-
 :::
 
 ```{r}
+#| label: setup-simple-xmap
 #| echo: false
 #| message: false
 #| file: includes/simple-xmap-plots.R
@@ -112,42 +182,133 @@ We use the term **cross-taxonomy transformation** to refer to the sub-task of ta
 
 ::: {layout-nrow="[30,70]"}
 **Bi-Partite Graph**: the source and target taxonomies form two disjoint sets of nodes, and weighted edges specify how numeric data is passed between the two taxonomies.
+
 ```{r}
 #| echo: false
 #| fig-align: center
 abc_bigraph
 
 ```
+:::
 
+## Crossmaps and Conditional Probability Distributions
+
+::: {layout-nrow="[30,70]"}
+**Conditional Probabilities**: Conditional on an "individual" being observed in category `f`, the probability of them transitioning to category `DD` in the counterfactual is `0.3` -- i.e. $Pr(DD|f) = 0.3$
+
+```{r}
+#| echo: false
+#| fig-align: center
+abc_bigraph
+
+```
 :::
 
 ## Other useful representations
 
 ::: {layout-ncol="2"}
+**Transition/Adjacency Matrix** representation highlights the fact that cross-taxonomy transformations are a special case of Markov Chains.
 
-**Transition Matrix**: representation highlights the fact that cross-taxonomy transformations are a special case of Markov Chains.
 ```{r}
 #| echo: false
 #| fig-align: center
-abc_matrix
+
+
+abc_matrix +
+  theme(axis.text = element_text(size = 20))
 ```
 
-**Edge List**: representation allows for the transformation to implemented as a series of database joins.
+**Edge List** representation allows for the transformation to implemented as a series of database joins.
+
 ```{r}
 #| echo: false
 #| fig-align: center
 abc_xmap
 ```
-
 :::
 
 <!-- ![](images/paste-22.png){fig-align="center"} -->
+
+## Cross-taxonomy transformation using database operations
+
+-   Cross-taxonomy transformation always involves **renaming category labels**:
+    -   `111212: Defence Force Senior Officer` 
+    -   `--> 0110: Commissioned armed forces officers`.
+-   In addition to these **character transformation**, depending on the mapping between taxonomies, **numeric transformation** can include:
+    -   "pass-through" of numeric values -- i.e. one-to-unique relations
+    -   numeric aggregation -- i.e. one-to-shared relations
+    -   numeric redistribution -- i.e. one-to-many relations
+
+## Cross-taxonomy transformation using database operations
+
+We can encompass the string and numeric operations in the following tabular operations:
+
+::: {layout-ncol="2"}
+1.  **Rename** original categories into target categories
+2.  **Multiply** source node values by link weight.
+3.  **Summarise** mutated values by target node.
+
+```{r}
+#| code-line-numbers: "3-6|7|8,9"
+## mock up of apply_xmap()
+apply_xmap <- function(.data, .xmap) {
+    dplyr::left_join(
+        x = .data,
+        y = .xmap,
+        by = "anzsco22") |>
+        dplyr::mutate(part_count = count * weights) |>
+        dplyr::group_by(isco8) |>
+        dplyr::summarise(new_count = sum(part_count))
+}
+```
+:::
+
+# Discussion
+
+## Benefits and implications
+
+- **Data quality**
+  - assertions for validating transformation logic and conformability
+  - prescribes data cleaning order
+
+. . .
+
+- **Statistical Properties of Cross-Taxonomy Transformations**
+  - theoretical vs. empirical robustness
+  - complex imputation metrics
+
+. . .
+
+- **Data provenance**
+  - improved code-readabilty
+  - new provenance documentation and visualisation formats
+  - extracting new summary insights from existing transformation scripts
 
 ## Implications for Validing Transformation Logic
 
 -   A valid cross-taxonomy transformation should **preserve the total** of category index values in each source observation.
 -   A crossmap has valid transformation logic if every source node and its outgoing links define a valid probability distribution -- i.e. **the sum of the edge weights is 1.**
--   Missing values cannot be meaningfully distributed across multiple categories, so missing values should be dealt with before the cross-taxonomy transformation.
+
+![](images/weights-sum.png){fig-align="center"}
+
+## Implications for Validing Conformability
+
+For a crossmap and some source data to be conformable, the transformation logic should cover all categories in the source data:
+
+![](images/paste-2.png){fig-align="center"}
+
+## Implications for Data Preprocessing Workflow
+
+Missing values cannot be meaningfully distributed across multiple categories, so missing values should be dealt with before the cross-taxonomy transformation.
+
+![](images/paste-1.png){fig-align="center"}
+
+## Implications for Understanding Statistical Properties
+
+-   Theoretically valid cross-taxonomy transformation logic does not guaranteee the transformed data can support downstream inference or estimation.
+-   In practice, the quality of the transformed data depends on the quality of the source data, the quality of the crossmap, and **the degree of imputation performed on the source data**.
+-   Cross-taxonomy transformations are a complex imputation procedure. Unlike with missing value imputation, it is not immediately clear how to define metrics for measuring the degree of this imputation. However, the framework suggests that such a **metric needs to incorporate properities of crossmaps as well as the distance between the source and transformed data**.
+-   Crossmaps define a class of graphs from which we can **generate alternative transformations** for a given set of source observations. These alternative transformations can then be applied to **examine the robustness** of downstream analysis to different pre-processing (i.e. mapping) decisions.
 
 ## Implications for Code Readability
 
@@ -164,19 +325,51 @@ Compared to hundreds for imperative algorithms (e.g. STATA code below):
 ``` {.stata include="includes/schott_algorithm_28.do" filename="hssicnaics_20191205/schott_algorithm_28.do [800+ lines]"}
 ```
 
-## Implications for Statistical Properties
+## Implications for Data Provenance Documentation and Visualisation
 
-- Theoretically valid cross-taxonomy transformation logic does not guaranteee the transformed data can support downstream inference or estimation.
-- In practice, the quality of the transformed data depends on the quality of the source data, the quality of the crossmap, and **the degree of imputation performed on the source data**.
-- Cross-taxonomy transformations are a complex imputation procedure. Unlike with missing value imputation, it is not immediately clear how to define metrics for measuring the degree of this imputation. However, the framework suggests that such a **metric needs to incorporate properities of crossmaps as well as the distance between the source and transformed data**.
-- Crossmaps define a class of graphs from which we can **generate alternative transformations** for a given set of source observations. These alternative transformations can then be applied to **examine the robustness** of downstream analysis to different pre-processing (i.e. mapping) decisions.
+- Graph/Matrix structure enables new insights from existing cross-taxonomy transformations
+    -   Identification and summary of influential sub-graphs (i.e. one-to-many links are more subjective than one-to-one)
+    -   Extracting transformation logic from existing algorithms (i.e. using unit vectors to trace the distribution of values)
+- Crossmaps connect data transformation with established visualisation literature:
+    -   Bi-graph visualisation (upcoming workshop at IEEE VIS23)
+    -   Multi-layer graph visualisation and layout algorithms for sequential transformations
+    -   Interactive exploration of transformation mappings
 
-## Other related work
+# Implementation in R {xmap}
 
-- `{xmap}` R package implementation of object classes and functions for the crossmap approach
-- Data provenance documentation:
-  - Multi-layer graph visualisation of sequential transformations
-  - Identification and summary of influential sub-graphs (i.e. one-to-many links are more subjective than one-to-one)
-  - Extracting transformation logic from existing algorithms (i.e. using unit vectors to trace the distribution of values)
+## Considerations and features
+
+-   new vector types to handle category index vectors (factor+) and roles (i.e. to, from, weights)
+-   new data-frame types for storing and validating crossmap edge-lists
+-   nested workflows for handling multiple related transformations
+-   floating point tolerance for validating weights (i.e. what is close enough to `1`?)
+-   helper functions for converting crossmaps to/from other formats (matrices, igraph etc.)
+-   helper functions for generating valid crossmaps and sample source data to simulate cross-taxonomy transformations
+-   helper functions for converting crossmap edge-lists into provenance documentation
+
+## New Provenance Documentation Formats
+
+```{r}
+#| output-location: column-fragment
+#| code-line-numbers: "4-9"
+
+## simple stylized xmap
+simple_xmap <- xmap::mock$xmap_abc
+
+## autoplot
+library(xmap)
+library(ggraph)
+library(ggplot2)
+simple_xmap |>
+    autoplot()
+```
+
+```{r}
+#| output-location: column-fragment
+
+## summary table
+simple_xmap |>
+    summary_by_target(collapse = ", ")
+```
 
 ## References
