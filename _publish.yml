@@ -1,0 +1,4 @@
+- source: slides.qmd
+  quarto-pub:
+    - id: beac15fa-a441-40a5-881f-f9476a53f620
+      url: 'https://cynthiahuang.quarto.pub/advances-expost-crossmap'

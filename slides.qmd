@@ -19,13 +19,7 @@ format:
     show-notes: false
     controls: true
     default-timing: 90
-    output-file: slides-monash-revealjs.html
     theme: [default, custom.scss]
-  revealjs:
-    output-file: slides-revealjs.html
-    show-notes: false
-  pdf:
-    pdf-engine: weasyprint
 execute:
   echo: true
 bibliography: [references.bib]
@@ -146,7 +140,7 @@ We use the term **cross-taxonomy transformation** to refer to the sub-task of ta
     -   reduce errors
     -   see Domain Specfic Languages for data preparation [@wickhamTidyData2014; @kandelWranglerInteractivevisual2011]
 -   Statistical properties of complex data pre-processing are not as well understood or studied compared to simpler transformations (e.g. missing data imputation, outlier detection, etc.)
-    -   formal structures and frameworks can enable more rigorous anlaysis of these properties
+    -   formal structures and frameworks can enable more rigorous analysis of these properties
     -   e.g. @blockerPotentialPerilsPreprocessing2013 propose a theoretical framework for multi-phase inference
 
 # Crossmap Approach
