@@ -1,7 +1,7 @@
 ---
 title: "Advances in Ex-Post Harmonisation using Graph Representations of Cross-Taxonomy Transformations"
 subtitle: ""
-date: today
+date: 2023-10-12
 date-format: medium
 author: 
  - name: "Cynthia Huang with A. Prof. Laura Puzzello"
@@ -10,7 +10,7 @@ institute: "Department of Econometrics and Business Statistics"
 title-slide-attributes: 
   data-background-image: "_extensions/numbats/monash/images/bg-10.png"
   data-background-size: "contain"
-footer: "NUMBATS Seminar"
+footer: "NUMBAT Seminar"
 format: 
   monash-revealjs:
     multiplex: true
